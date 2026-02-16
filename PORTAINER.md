@@ -31,7 +31,7 @@ Configure GHCR auth in Portainer first:
 6. Save, then deploy the stack.
 
 ## Access
-- UI + API: `http://<host>:3001`
+- UI + API: `http://<host>:7005`
 
 ## Persistence
 Generated files are stored in Docker volume `dembrandt_output` at `/app/output` inside container.
@@ -39,4 +39,5 @@ Generated files are stored in Docker volume `dembrandt_output` at `/app/output` 
 ## Notes
 - Extraction runs with `--no-sandbox` by default in this web mode for container compatibility.
 - If Playwright/browser startup issues happen in your host, keep `shm_size: 1gb` and do not remove it.
+
 

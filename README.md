@@ -125,7 +125,7 @@ npm run build
 npm start
 ```
 
-Open http://localhost:3001
+Open http://localhost:7005
 
 ### Features
 
@@ -151,7 +151,7 @@ Deploy with stack YAML from this repo:
 
 After deploy, access:
 
-- http://localhost:3001
+- http://localhost:7005
 
 ## Use Cases
 
@@ -222,5 +222,6 @@ If you are running from your own GitHub account/org, update deploy/portainer-sta
 ghcr.io/johnvmm/dembrandt-main:latest`r
 
 A GitHub Actions workflow is included at .github/workflows/publish-ghcr.yml to publish this image automatically on pushes to main.
+
 
 
