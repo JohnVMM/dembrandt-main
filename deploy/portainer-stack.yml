@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  dembrandt:
+    image: ghcr.io/dembrandt/dembrandt:latest
+    container_name: dembrandt-portainer
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    restart: unless-stopped
+    shm_size: "1gb"
+    volumes:
+      - dembrandt_output:/app/output
+
+volumes:
+  dembrandt_output:

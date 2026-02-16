@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/playwright:v1.57.0-noble
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY local-ui/package*.json ./local-ui/
+RUN cd local-ui && npm ci
+
+COPY . .
+
+RUN cd local-ui && npm run build
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+EXPOSE 3001
+
+CMD ["node", "local-ui/server.js"]

@@ -1,0 +1,8 @@
+node_modules
+local-ui/node_modules
+output
+.git
+.gitignore
+.vscode
+*.log
+local-ui/dist
