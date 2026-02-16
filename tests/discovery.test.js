@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   classifyLinkIntent,
   extractInternalLinksFromHtml,
+  isLikelyDocumentUrl,
   pickRepresentativePages,
   discoverRepresentativePages,
 } from "../lib/discovery.js";
@@ -23,6 +24,27 @@ test("extractInternalLinksFromHtml keeps only internal links", () => {
 
   const links = extractInternalLinksFromHtml(html, "https://acme.com");
   assert.deepEqual(links.sort(), ["https://acme.com/docs", "https://acme.com/pricing"]);
+});
+
+test("isLikelyDocumentUrl filters technical/assets paths", () => {
+  assert.equal(isLikelyDocumentUrl("https://acme.com/"), true);
+  assert.equal(isLikelyDocumentUrl("https://acme.com/pricing"), true);
+  assert.equal(isLikelyDocumentUrl("https://acme.com/_nuxt/app.js"), false);
+  assert.equal(isLikelyDocumentUrl("https://acme.com/static/main.css"), false);
+  assert.equal(isLikelyDocumentUrl("https://acme.com/favicon/favicon.ico"), false);
+  assert.equal(isLikelyDocumentUrl("https://acme.com/_payload.json?a=1"), false);
+});
+
+test("extractInternalLinksFromHtml excludes non-document internal links", () => {
+  const html = `
+    <a href=\"/pricing\">Pricing</a>
+    <a href=\"/_nuxt/app.js\">Nuxt</a>
+    <a href=\"/favicon/favicon.ico\">Icon</a>
+    <a href=\"/team\">Team</a>
+  `;
+
+  const links = extractInternalLinksFromHtml(html, "https://acme.com");
+  assert.deepEqual(links.sort(), ["https://acme.com/pricing", "https://acme.com/team"]);
 });
 
 test("pickRepresentativePages deduplicates and limits pages", () => {
@@ -67,4 +89,38 @@ test("discoverRepresentativePages crawls by depth budget", async () => {
 
   assert.equal(result.selected.length, 3);
   assert.ok(result.discovered.includes("https://acme.com/pricing"));
+});
+
+test("discoverRepresentativePages skips parsing non-html responses", async () => {
+  const pages = new Map([
+    ["https://acme.com/", `<a href=\"/pricing\">Pricing</a><a href=\"/_nuxt/app.js\">Asset</a>`],
+    ["https://acme.com/pricing", `<a href=\"/contact\">Contact</a>`],
+    ["https://acme.com/contact", ``],
+  ]);
+
+  const fetchImpl = async (url) => {
+    const isScript = String(url).includes("_nuxt/app.js");
+    return {
+      headers: {
+        get(name) {
+          if (name.toLowerCase() !== "content-type") return null;
+          return isScript ? "application/javascript" : "text/html; charset=utf-8";
+        },
+      },
+      async text() {
+        return pages.get(url) || "";
+      },
+    };
+  };
+
+  const result = await discoverRepresentativePages({
+    startUrl: "https://acme.com/",
+    fetchImpl,
+    maxPages: 5,
+    maxDepth: 2,
+    maxTimeMs: 5000,
+  });
+
+  assert.equal(result.discovered.includes("https://acme.com/_nuxt/app.js"), false);
+  assert.equal(result.selected.includes("https://acme.com/contact"), true);
 });

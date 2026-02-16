@@ -1,0 +1,163 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INVERSA Replica</title>
+    <meta
+      name="description"
+      content="Replica built from extracted design system: preloader, smooth scroll, bold typography and clipped UI."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="preloader" id="preloader" aria-live="polite">
+      <div class="preloader-grid"></div>
+      <div class="preloader-box">
+        <p class="preloader-tag">System warmup</p>
+        <h1>INVERSA</h1>
+        <div class="preloader-progress"><span id="preloader-bar"></span></div>
+      </div>
+    </div>
+
+    <header class="site-header">
+      <a class="brand" href="#home">INVERSA</a>
+      <nav>
+        <a href="#values">Values</a>
+        <a href="#lab">Lab</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <button class="menu-btn">Menu</button>
+    </header>
+
+    <main id="home">
+      <section class="hero">
+        <div class="hero-layer"></div>
+        <div class="container hero-content">
+          <p class="eyebrow">ethical exotics</p>
+          <h2 class="hero-title reveal">
+            Restore balance
+            <span>without compromise</span>
+          </h2>
+          <p class="hero-text reveal">
+            A premium digital experience inspired by the extracted design system:
+            clipped components, high-contrast color logic and technical motion.
+          </p>
+          <div class="hero-actions reveal">
+            <a class="btn btn-primary" href="#contact">Start mission</a>
+            <a class="btn btn-ghost" href="#lab">See pipeline</a>
+          </div>
+        </div>
+        <div class="hero-indicator">
+          <span>Scroll</span>
+          <i></i>
+        </div>
+      </section>
+
+      <section class="values" id="values">
+        <div class="container">
+          <p class="eyebrow">core values</p>
+          <h3 class="section-title reveal">Ecology meets precision engineering</h3>
+          <div class="value-grid">
+            <article class="value-card reveal">
+              <h4>Restoration first</h4>
+              <p>Every action aims to regenerate ecosystems and protect native biodiversity.</p>
+            </article>
+            <article class="value-card reveal">
+              <h4>Traceable process</h4>
+              <p>From field capture to delivery, each step is documented in a transparent chain.</p>
+            </article>
+            <article class="value-card reveal">
+              <h4>Premium execution</h4>
+              <p>Operational standards, craft and product quality built for demanding markets.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="lab" id="lab">
+        <div class="container lab-grid">
+          <div class="lab-media reveal">
+            <video
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              src="https://cdn.pixabay.com/video/2021/08/10/84453-586642683_tiny.mp4"
+            ></video>
+            <span class="chip">live field feed</span>
+          </div>
+          <div class="lab-content reveal">
+            <p class="eyebrow">mission pipeline</p>
+            <h3 class="section-title">Collect. Validate. Return value to nature.</h3>
+            <ol>
+              <li><strong>01</strong><span>Field capture with ecosystem-safe protocol.</span></li>
+              <li><strong>02</strong><span>Lab grading and technical quality scoring.</span></li>
+              <li><strong>03</strong><span>Commercial release tied to restoration funding.</span></li>
+            </ol>
+            <a class="btn btn-primary" href="#contact">Request briefing</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="quotes">
+        <div class="pattern"></div>
+        <div class="container">
+          <p class="eyebrow dark">signal</p>
+          <div class="quote-wrap">
+            <blockquote class="quote active">
+              "This is what high-end climate tech storytelling should feel like."
+            </blockquote>
+            <blockquote class="quote">
+              "The motion language mirrors operational discipline and confidence."
+            </blockquote>
+            <blockquote class="quote">
+              "Aesthetic, data and purpose aligned in one interaction system."
+            </blockquote>
+          </div>
+        </div>
+      </section>
+
+      <section class="contact" id="contact">
+        <div class="container contact-grid">
+          <div>
+            <p class="eyebrow">contact</p>
+            <h3 class="section-title reveal">Build your own mission-grade experience.</h3>
+            <p class="contact-copy reveal">
+              This page was recreated from extracted tokens, components and motion recipes.
+              Use it as a fidelity benchmark for your builder.
+            </p>
+          </div>
+          <form class="contact-form reveal" onsubmit="return false;">
+            <label>
+              Name
+              <input type="text" placeholder="Your name" />
+            </label>
+            <label>
+              Email
+              <input type="email" placeholder="you@company.com" />
+            </label>
+            <button class="btn btn-primary" type="submit">Send request</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>INVERSA Replica - extracted on 2026-02-16</span>
+      <span>Built from Site-2 tokens.light.json and motion.json</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

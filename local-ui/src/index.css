@@ -195,6 +195,10 @@ button:disabled {
   gap: 8px;
 }
 
+.download-actions {
+  margin-bottom: 10px;
+}
+
 .downloads a {
   text-decoration: none;
   padding: 8px 10px;

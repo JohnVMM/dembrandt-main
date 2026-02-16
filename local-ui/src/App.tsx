@@ -196,6 +196,28 @@ function App() {
     }
   }
 
+  function downloadHrefForFile(file: string) {
+    if (!selected) return "#";
+    return file.includes("/")
+      ? `/api/download-file?domain=${encodeURIComponent(selected.domain)}&timestamp=${encodeURIComponent(selected.timestamp)}&file=${encodeURIComponent(file)}`
+      : `/api/download/${selected.domain}/${selected.timestamp}/${file}`;
+  }
+
+  function handleDownloadAll() {
+    if (!selected || selected.mode !== "bundle" || selectedFiles.length === 0) return;
+
+    selectedFiles.forEach((file, index) => {
+      window.setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = downloadHrefForFile(file);
+        link.setAttribute("download", file.split("/").pop() || "file");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, index * 180);
+    });
+  }
+
   useEffect(() => {
     loadBundles();
     return () => clearProgressTimer();
@@ -363,15 +385,16 @@ function App() {
           {selected && selected.mode === 'bundle' && (
             <>
               <h2>Downloads</h2>
+              <div className="download-actions">
+                <button className="secondary" onClick={handleDownloadAll}>
+                  Baixar tudo
+                </button>
+              </div>
               <div className="downloads">
                 {selectedFiles.map((file) => (
                   <a
                     key={file}
-                    href={
-                      file.includes('/')
-                        ? `/api/download-file?domain=${encodeURIComponent(selected.domain)}&timestamp=${encodeURIComponent(selected.timestamp)}&file=${encodeURIComponent(file)}`
-                        : `/api/download/${selected.domain}/${selected.timestamp}/${file}`
-                    }
+                    href={downloadHrefForFile(file)}
                     target="_blank"
                     rel="noreferrer"
                   >
