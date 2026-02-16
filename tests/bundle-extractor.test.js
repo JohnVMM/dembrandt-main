@@ -61,6 +61,61 @@ test("extractBundle returns bundle contract", async () => {
   global.fetch = originalFetch;
 });
 
+test("extractBundle merges advanced motion artifacts from discovered pages", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    async text() {
+      return `<a href="/pricing">Pricing</a><a href="/about">About</a>`;
+    },
+  });
+
+  const fakeExtractBranding = async (url) => ({
+    url,
+    extractedAt: "2026-02-16T00:00:00.000Z",
+    logo: null,
+    favicons: [],
+    colors: { semantic: {}, palette: [], cssVariables: {} },
+    typography: { styles: [], sources: { googleFonts: [] } },
+    spacing: { scaleType: "8pt", commonValues: [] },
+    borderRadius: { values: [] },
+    borders: { combinations: [] },
+    shadows: [],
+    components: { buttons: [], inputs: { text: [], checkbox: [], radio: [], select: [] }, links: [], badges: { all: [], byVariant: {} } },
+    breakpoints: [],
+    iconSystem: [],
+    frameworks: [],
+    motion: {
+      durations: ["200ms"],
+      easings: ["ease"],
+      properties: ["transform"],
+      keyframes: ["fadeIn"],
+      libraries: ["gsap"],
+      preloaders: [{ selectorHint: "div#preloader", reason: "name-match", width: 1920, height: 1080 }],
+      animationScripts: [{ name: "preloader-sequence", type: "inline", content: "gsap.timeline({});" }],
+      scriptReferences: [{ type: "external", url: "https://cdn.example.com/gsap.js" }],
+      recipes: [{ name: "preloader-sequence", trigger: "load", properties: ["opacity"] }],
+    },
+    media: { items: [] },
+  });
+
+  const bundle = await extractBundle({
+    url: "https://acme.com/",
+    spinner: fakeSpinner(),
+    browser: {},
+    extractBranding: fakeExtractBranding,
+    limits: { maxPages: 2, maxDepth: 2, maxTimeMs: 5000, maxAssetBytes: 100000, concurrency: 1 },
+    fingerprint: { jobId: "job-1" },
+    options: { includeMotion: true, includeLayoutMap: true },
+  });
+
+  assert.equal(bundle.motion.preloaders.length > 0, true);
+  assert.equal(bundle.motion.animationScripts.length > 0, true);
+  assert.equal(bundle.motion.scriptReferences.length > 0, true);
+  assert.equal(bundle.motion.libraries.includes("gsap"), true);
+
+  global.fetch = originalFetch;
+});
+
 test("saveBundleOutput writes all bundle files", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "dembrandt-test-"));
 
@@ -144,6 +199,54 @@ test("saveBundleOutput enforces allowlist in asset downloads", async () => {
   });
 
   assert.equal(bundle.assets.downloads.some((d) => d.reason === "host-not-allowlisted"), true);
+
+  global.fetch = originalFetch;
+  rmSync(tempDir, { recursive: true, force: true });
+});
+
+test("saveBundleOutput writes named motion scripts (inline and external)", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "dembrandt-test-"));
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    headers: { get: () => "application/javascript" },
+    async arrayBuffer() {
+      return Buffer.from("console.log('external animation');");
+    },
+  });
+
+  const bundle = {
+    schemaVersion: "1.0.0",
+    rawPages: [],
+    tokensLight: {},
+    tokensDark: {},
+    components: {},
+    layout: {},
+    motion: {
+      durations: ["200ms"],
+      easings: ["ease"],
+      recipes: [{ name: "hover-lift", trigger: "hover", properties: ["transform"] }],
+      animationScripts: [
+        { name: "preloader-sequence", type: "inline", content: "gsap.timeline({ defaults: {} });" },
+        { name: "scroll-sequence", type: "external", url: "https://cdn.example.com/scroll.js" },
+      ],
+    },
+    summary: {},
+    assets: { references: [], downloads: [] },
+    dtcg: {},
+    report: {},
+  };
+
+  const { outputDir } = await saveBundleOutput({
+    bundle,
+    targetUrl: "https://acme.com/",
+    outputRoot: tempDir,
+    downloadAssets: false,
+  });
+
+  assert.equal(existsSync(join(outputDir, "motion", "scripts", "01-preloader-sequence.js")), true);
+  assert.equal(existsSync(join(outputDir, "motion", "scripts", "02-scroll-sequence.js")), true);
+  assert.equal(Array.isArray(bundle.motion.scriptFiles), true);
+  assert.equal(bundle.motion.scriptFiles.length, 2);
 
   global.fetch = originalFetch;
   rmSync(tempDir, { recursive: true, force: true });

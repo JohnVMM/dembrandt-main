@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 
 type SummarySimple = {
   title: string;
@@ -70,12 +70,58 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
+  const [progress, setProgress] = useState(0);
+  const progressTimerRef = useRef<number | null>(null);
 
   const [bundles, setBundles] = useState<BundleEntry[]>([]);
   const [selected, setSelected] = useState<BundleEntry | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<SummarySimple | null>(null);
 
   const selectedFiles = useMemo(() => selected?.files || [], [selected]);
+
+  function repairBrokenChars(input: string) {
+    return input
+      .replaceAll('Ã§', 'ç')
+      .replaceAll('Ã£', 'ã')
+      .replaceAll('Ã¡', 'á')
+      .replaceAll('Ã©', 'é')
+      .replaceAll('Ã³', 'ó')
+      .replaceAll('Ãº', 'ú')
+      .replaceAll('â€œ', '"')
+      .replaceAll('â€\u009d', '"')
+      .replaceAll('â€™', "'")
+      .replaceAll('â€“', '-')
+      .replaceAll('â€”', '-')
+      .replaceAll('â€¦', '...')
+      .replaceAll('âœ“', '✓')
+      .replaceAll('âš ', '⚠')
+      .replaceAll('â†³', '↳');
+  }
+
+  function clearProgressTimer() {
+    if (progressTimerRef.current !== null) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }
+
+  function startProgress() {
+    clearProgressTimer();
+    setProgress(6);
+    progressTimerRef.current = window.setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 92) return prev;
+        const step = prev < 40 ? 7 : prev < 70 ? 4 : 2;
+        return Math.min(92, prev + step);
+      });
+    }, 700);
+  }
+
+  function finishProgress() {
+    clearProgressTimer();
+    setProgress(100);
+    window.setTimeout(() => setProgress(0), 1200);
+  }
 
   async function loadBundles() {
     try {
@@ -86,7 +132,7 @@ function App() {
         setSelected(data[0]);
       }
     } catch (e) {
-      setError((e as Error).message);
+      setError(repairBrokenChars((e as Error).message));
     }
   }
 
@@ -110,13 +156,14 @@ function App() {
 
   async function runExtraction() {
     if (!url.trim()) {
-      setError('Informe um site para extra��o.');
+      setError('Informe um site para extração.');
       return;
     }
 
     setLoading(true);
     setError(null);
-    setStatus('Executando extra��o...');
+    setStatus('Executando extração...');
+    startProgress();
 
     try {
       const res = await fetch('/api/extract', {
@@ -127,26 +174,31 @@ function App() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || 'Falha na extra��o');
+        throw new Error(repairBrokenChars(body?.error || 'Falha na extração'));
       }
 
       const data = (await res.json()) as ExtractResponse;
-      setStatus('Extra��o conclu�da com sucesso.');
+      setStatus('Extração concluída com sucesso.');
+      finishProgress();
 
       await loadBundles();
       if (data.latest) {
         await loadSummary(data.latest);
       }
     } catch (e) {
-      setError((e as Error).message);
+      clearProgressTimer();
+      setProgress(0);
+      setError(repairBrokenChars((e as Error).message));
       setStatus('');
     } finally {
+      clearProgressTimer();
       setLoading(false);
     }
   }
 
   useEffect(() => {
     loadBundles();
+    return () => clearProgressTimer();
   }, []);
 
   return (
@@ -157,7 +209,7 @@ function App() {
       </header>
 
       <section className="card">
-        <h2>Nova Extra��o</h2>
+        <h2>Nova Extração</h2>
         <div className="grid">
           <label>
             Site
@@ -207,7 +259,7 @@ function App() {
           </label>
 
           <label>
-            Concorr�ncia
+            Concorrência
             <input
               type="number"
               value={options.concurrency}
@@ -241,21 +293,30 @@ function App() {
 
         <div className="actions">
           <button onClick={runExtraction} disabled={loading}>
-            {loading ? 'Extraindo...' : 'Executar Extra��o'}
+            {loading ? 'Extraindo...' : 'Executar Extração'}
           </button>
           <button className="secondary" onClick={loadBundles} disabled={loading}>
             Atualizar Lista
           </button>
         </div>
 
-        {status && <p className="status ok">{status}</p>}
-        {error && <p className="status error">{error}</p>}
+        {loading && (
+          <div className="progress-wrap" aria-live="polite">
+            <div className="progress-track">
+              <div className="progress-bar" style={{ width: `${progress}%` }} />
+            </div>
+            <small>{progress}%</small>
+          </div>
+        )}
+
+        {status && <p className="status ok">{repairBrokenChars(status)}</p>}
+        {error && <p className="status error">{repairBrokenChars(error)}</p>}
       </section>
 
       <section className="split">
         <div className="card">
-          <h2>Extra��es Salvas</h2>
-          {bundles.length === 0 && <p>Nenhuma extra��o encontrada.</p>}
+          <h2>Extrações Salvas</h2>
+          {bundles.length === 0 && <p>Nenhuma extração encontrada.</p>}
           <ul className="list">
             {bundles.map((entry) => (
               <li key={`${entry.domain}-${entry.timestamp}-${entry.path}`}>
@@ -274,22 +335,22 @@ function App() {
 
         <div className="card">
           <h2>Resumo</h2>
-          {!selected && <p>Selecione uma extra��o.</p>}
-          {selected && !selectedSummary && <p>Sem summary dispon�vel.</p>}
+          {!selected && <p>Selecione uma extração.</p>}
+          {selected && !selectedSummary && <p>Sem summary disponível.</p>}
 
           {selectedSummary && (
             <div className="summary">
-              <p><strong>Fonte:</strong> {selectedSummary.source}</p>
-              <p><strong>Extra�do em:</strong> {selectedSummary.extractedAt}</p>
+              <p><strong>Fonte:</strong> {repairBrokenChars(selectedSummary.source)}</p>
+              <p><strong>Extraído em:</strong> {selectedSummary.extractedAt}</p>
 
-              <h3>Anima��o</h3>
+              <h3>Animação</h3>
               <p>Durations: {selectedSummary.highlights.animation.mainDurations.join(', ') || '-'}</p>
               <p>Easings: {selectedSummary.highlights.animation.mainEasings.join(', ') || '-'}</p>
               <p>Recipes: {selectedSummary.highlights.animation.mainRecipes.join(', ') || '-'}</p>
 
               <h3>Paleta</h3>
-              <p>Sem�nticas: {selectedSummary.highlights.palette.semantic.map((c) => `${c.name}: ${c.value}`).join(' | ') || '-'}</p>
-              <p>Top: {selectedSummary.highlights.palette.topPalette.map((c) => `${c.name}: ${c.value}`).join(' | ') || '-'}</p>
+              <p>Semânticas: {selectedSummary.highlights.palette.semantic.map((c) => `${repairBrokenChars(c.name)}: ${c.value}`).join(' | ') || '-'}</p>
+              <p>Top: {selectedSummary.highlights.palette.topPalette.map((c) => `${repairBrokenChars(c.name)}: ${c.value}`).join(' | ') || '-'}</p>
 
               <h3>Bordas</h3>
               <p>{selectedSummary.highlights.borders.join(' | ') || '-'}</p>
@@ -306,7 +367,11 @@ function App() {
                 {selectedFiles.map((file) => (
                   <a
                     key={file}
-                    href={`/api/download/${selected.domain}/${selected.timestamp}/${file}`}
+                    href={
+                      file.includes('/')
+                        ? `/api/download-file?domain=${encodeURIComponent(selected.domain)}&timestamp=${encodeURIComponent(selected.timestamp)}&file=${encodeURIComponent(file)}`
+                        : `/api/download/${selected.domain}/${selected.timestamp}/${file}`
+                    }
                     target="_blank"
                     rel="noreferrer"
                   >

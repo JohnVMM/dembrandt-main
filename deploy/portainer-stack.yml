@@ -1,20 +1,36 @@
-version: "3.9"
+version: "3.7"
 
 services:
   dembrandt:
     image: ghcr.io/johnvmm/dembrandt-main:latest
-    container_name: dembrandt-portainer
     ports:
       - "7005:7005"
     environment:
       - PORT=7005
       - NODE_ENV=production
-    restart: unless-stopped
-    shm_size: "1gb"
     volumes:
       - dembrandt_output:/app/output
+    networks:
+      - network_public
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 2G
+        reservations:
+          cpus: "0.10"
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 10
+        window: 2m
 
 volumes:
   dembrandt_output:
 
+networks:
+  network_public:
+    name: network_public
+    external: true
 

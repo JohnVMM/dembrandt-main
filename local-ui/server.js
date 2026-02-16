@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
-import { dirname, join, extname } from 'path';
+import { dirname, join, extname, resolve } from 'path';
 import { existsSync } from 'fs';
 import { mkdir, readdir, readFile } from 'fs/promises';
 
@@ -33,6 +33,40 @@ function safeSegment(value) {
   return String(value || '')
     .replace(/[^a-zA-Z0-9._-]/g, '')
     .trim();
+}
+
+function safeRelativePath(value) {
+  return String(value || '')
+    .split(/[\\/]+/g)
+    .map((part) => safeSegment(part))
+    .filter(Boolean)
+    .join('/');
+}
+
+function ensurePathInside(basePath, targetPath) {
+  const base = resolve(basePath);
+  const target = resolve(targetPath);
+  return target === base || target.startsWith(`${base}\\`) || target.startsWith(`${base}/`);
+}
+
+async function listFilesRecursive(baseDir, relative = '') {
+  const dir = relative ? join(baseDir, relative) : baseDir;
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    const rel = relative ? `${relative}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      const nested = await listFilesRecursive(baseDir, rel);
+      files.push(...nested);
+      continue;
+    }
+    if (entry.isFile()) {
+      files.push(rel);
+    }
+  }
+
+  return files;
 }
 
 function buildExtractArgs(url, options = {}) {
@@ -107,7 +141,7 @@ async function listBundles() {
           path: `${domainDir.name}/${timestamp}`,
           summary,
           report,
-          files: KNOWN_DOWNLOAD_FILES.filter((f) => existsSync(join(bundlePath, f))),
+          files: (await listFilesRecursive(bundlePath)).sort((a, b) => a.localeCompare(b)),
         });
       } else if (entry.isFile() && entry.name.endsWith('.json')) {
         bundles.push({
@@ -156,6 +190,23 @@ app.get('/api/extractions/:domain/:timestamp/summary', async (req, res) => {
   }
 });
 
+app.get('/api/extractions/:domain/:timestamp/files', async (req, res) => {
+  try {
+    const domain = safeSegment(req.params.domain);
+    const timestamp = safeSegment(req.params.timestamp);
+    const bundlePath = join(outputRoot, domain, timestamp);
+
+    if (!existsSync(bundlePath)) {
+      return res.status(404).json({ error: 'Bundle not found' });
+    }
+
+    const files = (await listFilesRecursive(bundlePath)).sort((a, b) => a.localeCompare(b));
+    res.json({ files });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/download/:domain/:timestamp/:file', async (req, res) => {
   try {
     const domain = safeSegment(req.params.domain);
@@ -172,6 +223,62 @@ app.get('/api/download/:domain/:timestamp/:file', async (req, res) => {
     }
 
     res.download(target, file);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/download-file', async (req, res) => {
+  try {
+    const domain = safeSegment(req.query.domain);
+    const timestamp = safeSegment(req.query.timestamp);
+    const file = safeRelativePath(req.query.file);
+    const base = join(outputRoot, domain, timestamp);
+    const target = join(base, file);
+
+    if (!domain || !timestamp || !file) {
+      return res.status(400).json({ error: 'domain, timestamp and file are required' });
+    }
+
+    if (!ensurePathInside(base, target)) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+
+    if (!existsSync(target)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.download(target, file.split('/').pop());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/file', async (req, res) => {
+  try {
+    const domain = safeSegment(req.query.domain);
+    const timestamp = safeSegment(req.query.timestamp);
+    const file = safeRelativePath(req.query.file);
+    const base = join(outputRoot, domain, timestamp);
+    const target = join(base, file);
+
+    if (!domain || !timestamp || !file) {
+      return res.status(400).json({ error: 'domain, timestamp and file are required' });
+    }
+
+    if (!ensurePathInside(base, target)) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+
+    if (!existsSync(target)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const content = await readFile(target, 'utf-8');
+    if (extname(file).toLowerCase() === '.json') {
+      return res.json(JSON.parse(content));
+    }
+    res.type('text/plain').send(content);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
