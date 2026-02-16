@@ -217,9 +217,10 @@ MIT — do whatever you want with it.
 
 ### GHCR Image for Portainer
 
-Portainer stack uses image: ghcr.io/dembrandt/dembrandt:latest.
+Portainer stack uses image: ghcr.io/johnvmm/dembrandt-main:latest.
 If you are running from your own GitHub account/org, update deploy/portainer-stack.yml to:
-ghcr.io/<your-owner>/dembrandt:latest`r
+ghcr.io/johnvmm/dembrandt-main:latest`r
 
 A GitHub Actions workflow is included at .github/workflows/publish-ghcr.yml to publish this image automatically on pushes to main.
+
 

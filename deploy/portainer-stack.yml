@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   dembrandt:
-    image: ghcr.io/dembrandt/dembrandt:latest
+    image: ghcr.io/johnvmm/dembrandt-main:latest
     container_name: dembrandt-portainer
     ports:
       - "3001:3001"
@@ -16,3 +16,4 @@ services:
 
 volumes:
   dembrandt_output:
+

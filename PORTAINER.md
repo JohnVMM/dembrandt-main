@@ -3,7 +3,7 @@
 ## Prerequisites
 - Portainer local instance running
 - Stack deployment from Git repository enabled
-- Image published in GHCR as `ghcr.io/<owner>/dembrandt:latest`
+- Image published in GHCR as `ghcr.io/johnvmm/dembrandt-main:latest`
 
 ## Stack file
 Use: `deploy/portainer-stack.yml`
@@ -39,3 +39,4 @@ Generated files are stored in Docker volume `dembrandt_output` at `/app/output` 
 ## Notes
 - Extraction runs with `--no-sandbox` by default in this web mode for container compatibility.
 - If Playwright/browser startup issues happen in your host, keep `shm_size: 1gb` and do not remove it.
+
